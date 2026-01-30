@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+
+/* Ensure the Ghost and Editor treat empty paragraphs the same */
+.tiptap p:empty::before,
+.ghost-container p:empty::before {
+  content: "\00a0"; /* Non-breaking space */
+  display: inline-block;
+}
+
+/* Match margins exactly to prevent drift */
+.tiptap p, .ghost-container p {
+  margin-bottom: 1rem !important;
+  margin-top: 0 !important;
+}

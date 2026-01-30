@@ -1,65 +1,161 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, { useEffect, useRef, useState } from "react";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import {Table} from "@tiptap/extension-table";
+import {TableRow} from "@tiptap/extension-table-row";
+import {TableCell} from "@tiptap/extension-table-cell";
+import {TableHeader} from "@tiptap/extension-table-header";
+import {TextAlign} from "@tiptap/extension-text-align";
+
+// A4 Constants
+const PAGE_HEIGHT_PX = 1123; 
+const PAGE_WIDTH_PX = 794;
+const MARGIN_PX = 96; // 1 inch
+
+export default function FinalLegalEditor() {
+  const [pages, setPages] = useState(1);
+  const [mounted, setMounted] = useState(false);
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // 1. Prevent Hydration Error
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const editor = useEditor({
+    immediatelyRender: false, // Essential for Next.js
+    extensions: [
+      StarterKit,
+      TextAlign.configure({ types: ["heading", "paragraph"] }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ] as any[],
+    content: `<h1>Legal Document</h1><p>Start typing your petition here...</p>`,
+    onUpdate: ({ editor }) => {
+      // Logic to trigger re-render for button states and page math
+      calculatePages();
+    },
+  });
+
+  const calculatePages = () => {
+    if (editorRef.current) {
+      const contentHeight = editorRef.current.scrollHeight;
+      // Calculate pages based on the actual height vs A4 height
+      const newPageCount = Math.ceil(contentHeight / PAGE_HEIGHT_PX);
+      setPages(newPageCount || 1);
+    }
+  };
+
+  // Re-calculate whenever content changes
+  useEffect(() => {
+    if (editor) calculatePages();
+  }, [editor?.getHTML()]);
+
+  if (!mounted || !editor) return null;
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-slate-400 py-10 flex flex-col items-center overflow-auto selection:bg-blue-100">
+      
+      {/* TOOLBAR: Fixed and Clear */}
+      <div className="fixed top-0 z-50 w-full bg-white border-b border-slate-300 p-2 flex justify-center gap-4 shadow-sm">
+        <button 
+          type="button"
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={`px-6 py-1.5 rounded-md font-bold transition-all border ${
+            editor.isActive("bold") 
+              ? "bg-blue-600 text-white border-blue-700 shadow-inner" 
+              : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"
+          }`}
+        >
+          B
+        </button>
+        
+        <button 
+          type="button"
+          onClick={() => (editor.chain().focus() as any).insertTable({ rows: 3, cols: 3 }).run()}
+          className="px-4 py-1.5 bg-white border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 font-medium"
+        >
+          ＋ Table
+        </button>
+
+        <div className="h-8 w-px bg-slate-200" />
+        <div className="flex items-center text-xs font-black text-slate-500 uppercase">
+          Total Pages: {pages}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </div>
+
+      {/* THE PAGE VIEW */}
+      <div className="relative mt-12 shadow-[0_0_50px_rgba(0,0,0,0.2)]">
+        
+        {/* Visual Background Slices */}
+        <div className="absolute top-0 left-0 w-full pointer-events-none flex flex-col gap-0">
+          {Array.from({ length: pages }).map((_, i) => (
+            <div 
+              key={i} 
+              className="bg-white border-b-[20px] border-slate-400 last:border-b-0" 
+              style={{ width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX }}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
-      </main>
+
+        {/* ACTIVE EDITOR LAYER */}
+        <div 
+          ref={editorRef}
+          className="relative z-10 editor-canvas"
+          style={{
+            width: PAGE_WIDTH_PX,
+            padding: `${MARGIN_PX}px`,
+            // This gradient exactly matches the gaps in the background divs
+            backgroundImage: `linear-gradient(to bottom, transparent ${PAGE_HEIGHT_PX - 20}px, #94a3b8 ${PAGE_HEIGHT_PX - 20}px, #94a3b8 ${PAGE_HEIGHT_PX}px)`,
+            backgroundSize: `100% ${PAGE_HEIGHT_PX}px`,
+          }}
+        >
+          <EditorContent editor={editor} />
+        </div>
+      </div>
+
+      <style jsx global>{`
+        .ProseMirror {
+          outline: none;
+          min-height: ${PAGE_HEIGHT_PX - (MARGIN_PX * 2)}px;
+          font-family: 'Times New Roman', serif;
+          font-size: 12pt;
+          line-height: 0.5;
+          color: #000000;
+        }
+
+        /* Prevent text from getting stuck exactly in the gap */
+        .ProseMirror p {
+          margin-bottom: 0.5rem;
+        }
+
+        .ProseMirror table {
+          border-collapse: collapse;
+          width: 100%;
+          border: 1px solid #cbd5e1;
+        }
+        
+        .ProseMirror td, .ProseMirror th {
+          border: 1px solid #cbd5e1;
+          padding: 8px;
+        }
+
+        /* Print Settings */
+        @media print {
+          .fixed { display: none !important; }
+          body { background: white !important; padding: 0 !important; }
+          .editor-canvas { 
+            background-image: none !important; 
+            padding: 0 !important; 
+            box-shadow: none !important;
+          }
+          .ProseMirror { padding: 1in !important; }
+        }
+      `}</style>
     </div>
   );
 }
