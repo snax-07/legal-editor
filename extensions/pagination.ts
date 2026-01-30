@@ -31,17 +31,18 @@ export const Pagination = Extension.create({
 
         view: view => ({
           update: () => {
+            // 🌟 Guard against SSR / Node
+            if (typeof window === "undefined") return
+
             const ghost = this.options.getGhostRef()
             if (!ghost) return
 
             const proseMirror = view.dom.querySelector(".ProseMirror")
             if (!proseMirror) return
 
-
             ghost.innerHTML = proseMirror.innerHTML
 
-            // Normalize empty paragraphs
-            ghost.querySelectorAll("p").forEach(( p : any ) => {
+            ghost.querySelectorAll("p").forEach((p: any) => {
               if (!p.innerHTML.trim()) p.innerHTML = "&nbsp;"
             })
 
