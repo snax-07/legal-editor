@@ -37,7 +37,7 @@ export const Pagination = Extension.create({
             const proseMirror = view.dom.querySelector(".ProseMirror")
             if (!proseMirror) return
 
-            // Sync ghost content
+
             ghost.innerHTML = proseMirror.innerHTML
 
             // Normalize empty paragraphs

@@ -9,7 +9,7 @@ import {TableCell} from "@tiptap/extension-table-cell";
 import {TableHeader} from "@tiptap/extension-table-header";
 import {TextAlign} from "@tiptap/extension-text-align";
 
-// A4 Constants
+
 const PAGE_HEIGHT_PX = 1123; 
 const PAGE_WIDTH_PX = 794;
 const MARGIN_PX = 96; // 1 inch
